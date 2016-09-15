@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <declare-styleable name="BottomSheetBehavior_Layout">
+        <attr name="behavior_peekHeight" format="dimension" />
+        <attr name="behavior_hideable" format="boolean" />
+        <attr name="behavior_skipCollapsed" format="boolean" />
+        <attr name="behavior_anchorOffset" format="dimension"/>
+        <attr name="behavior_layout" format="reference" />
+    </declare-styleable>
+</resources>

@@ -1,4 +1,5 @@
-# Google Maps BottomSheet
+# Pilof
+A BottomSheetBehavior library mirroring Google Maps
 
 ## Usage
 
@@ -12,8 +13,6 @@
             app:behavior_hideable="true"
             app:behavior_peekHeight="100dp"
             app:behavior_anchorOffset="200dp"
-            app:layout_behavior="xyz.projectplay.googlemapsbottomsheet.GoogleMapsBottomSheetBehavior">
-
+            app:layout_behavior="xyz.projectplay.pilof.SheetBehavior">
             ...
-
 </android.support.v4.widget.NestedScrollView>
