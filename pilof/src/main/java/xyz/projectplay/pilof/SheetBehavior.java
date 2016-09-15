@@ -1,13 +1,17 @@
 package xyz.projectplay.pilof;
 
+import android.animation.ArgbEvaluator;
+import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
+import android.graphics.Color;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
 import android.support.design.widget.CoordinatorLayout;
+import android.support.v4.content.ContextCompat;
 import android.support.v4.os.ParcelableCompat;
 import android.support.v4.os.ParcelableCompatCreatorCallbacks;
 import android.support.v4.view.AbsSavedState;
@@ -23,14 +27,13 @@ import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.widget.LinearLayout;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.ref.WeakReference;
 
-import static xyz.projectplay.pilof.R.styleable.BottomSheetBehavior_Layout_behavior_hideable;
-import static xyz.projectplay.pilof.R.styleable.BottomSheetBehavior_Layout_behavior_peekHeight;
-import static xyz.projectplay.pilof.R.styleable.BottomSheetBehavior_Layout_behavior_skipCollapsed;
+import static xyz.projectplay.pilof.R.styleable.*;
 
 /**
  * Created by Nathan Reline on 8/25/16.
@@ -39,7 +42,7 @@ import static xyz.projectplay.pilof.R.styleable.BottomSheetBehavior_Layout_behav
  */
 public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V> {
 
-    private static final String TAG = "gpsidv:Sheet";
+    private static final String TAG = "PilofSheet";
 
     /**
      * Callback for monitoring events about bottom sheets.
@@ -119,6 +122,14 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
 
     private boolean mSkipCollapsed;
 
+    private boolean mSkipAnchored;
+
+    private int mCurrentColor;
+
+    private int mColor;
+
+    private int mAnchorColor;
+
     @State
     private int mState = STATE_HIDDEN;
 
@@ -146,7 +157,11 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
 
     private boolean mTouchingScrollingChild;
 
-    private Context context;
+    LinearLayout bottomsheet;
+
+    View headerLayout;
+
+    View contentLayout;
 
     /**
      * Default constructor for instantiating SheetBehaviors.
@@ -163,29 +178,40 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
      */
     public SheetBehavior(Context context, AttributeSet attrs) {
         super(context, attrs);
-        this.context = context;
         Resources res = context.getResources();
         TypedArray a = context.obtainStyledAttributes(attrs,
-                R.styleable.BottomSheetBehavior_Layout);
+                BottomSheetBehavior_Layout);
         setPeekHeight(a.getDimensionPixelSize(
                 BottomSheetBehavior_Layout_behavior_peekHeight,
                 res.getDimensionPixelSize(R.dimen.peekHeight)));
         setHideable(a.getBoolean(BottomSheetBehavior_Layout_behavior_hideable, false));
         setSkipCollapsed(a.getBoolean(BottomSheetBehavior_Layout_behavior_skipCollapsed,
                 false));
-        a.recycle();
-
-        a = context.obtainStyledAttributes(attrs, R.styleable.BottomSheetBehavior_Layout);
-        setAnchorHeight(
-                a.getDimensionPixelSize(R.styleable.BottomSheetBehavior_Layout_behavior_anchorOffset,
+        setAnchorHeight(a.getDimensionPixelSize(BottomSheetBehavior_Layout_behavior_anchorOffset,
                         res.getDimensionPixelSize(R.dimen.anchorOffset)));
 
-        View sheet = LayoutInflater.from(context).inflate(R.layout.sheet, null);
+        setColor(a.getColor(BottomSheetBehavior_Layout_behavior_color, Color.WHITE));
+        setPeekColor(a.getColor(BottomSheetBehavior_Layout_behavior_anchorColor,
+                ContextCompat.getColor(context, R.color.anchorColor)));
 
-        if (a.hasValue(R.styleable.BottomSheetBehavior_Layout_behavior_layout)) {
-            sheet = LayoutInflater.from(context).inflate(a.getResourceId(R.styleable.BottomSheetBehavior_Layout_behavior_layout, 0),
+        bottomsheet = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.sheet, null);
+        headerLayout = bottomsheet.findViewById(R.id.header);
+        contentLayout = bottomsheet.findViewById(R.id.content);
+
+        if (a.hasValue(BottomSheetBehavior_Layout_behavior_header_layout)) {
+            bottomsheet.removeView(headerLayout);
+            headerLayout = LayoutInflater.from(context).inflate(a.getResourceId(BottomSheetBehavior_Layout_behavior_header_layout, 0),
                     null);
+            bottomsheet.addView(headerLayout, 0);
         }
+
+        if (a.hasValue(BottomSheetBehavior_Layout_behavior_content_layout)) {
+            bottomsheet.removeView(contentLayout);
+            contentLayout = LayoutInflater.from(context).inflate(a.getResourceId(BottomSheetBehavior_Layout_behavior_content_layout, 0),
+                    null);
+            bottomsheet.addView(contentLayout, 1);
+        }
+
         a.recycle();
 
         ViewConfiguration configuration = ViewConfiguration.get(context);
@@ -237,6 +263,10 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
         }
         mViewRef = new WeakReference<>(child);
         mNestedScrollingChildRef = new WeakReference<>(findScrollingChild(child));
+        ViewGroup nestedScrolling = (ViewGroup) mNestedScrollingChildRef.get();
+        if (nestedScrolling.getChildCount() == 0) {
+            nestedScrolling.addView(bottomsheet);
+        }
         return true;
     }
 
@@ -405,6 +435,7 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
                 targetState = STATE_ANCHORED;
             }
         }
+        updateHeaderColor(targetState != STATE_COLLAPSED ? mAnchorColor : mColor);
         if (mViewDragHelper.smoothSlideViewTo(child, child.getLeft(), top)) {
             setStateInternal(STATE_SETTLING);
             ViewCompat.postOnAnimation(child, new SettleRunnable(child, targetState));
@@ -462,6 +493,22 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
      */
     public final int getAnchorOffset() {
         return mAnchorOffset;
+    }
+
+    public void setColor(int mColor) {
+        this.mColor = mColor;
+    }
+
+    public int getColor() {
+        return mColor;
+    }
+
+    public void setPeekColor(int mPeekColor) {
+        this.mAnchorColor = mPeekColor;
+    }
+
+    public int getPeekColor() {
+        return mAnchorColor;
     }
 
     /**
@@ -778,6 +825,19 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
                         return new SavedState[size];
                     }
                 });
+    }
+
+    private void updateHeaderColor(int color) {
+        ValueAnimator colorAnimation = ValueAnimator.ofObject(
+                new ArgbEvaluator(), mCurrentColor, color).setDuration(200);
+        mCurrentColor = color;
+        colorAnimation.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator valueAnimator) {
+                headerLayout.setBackgroundColor((int) valueAnimator.getAnimatedValue());
+            }
+        });
+        colorAnimation.start();
     }
 
     /**

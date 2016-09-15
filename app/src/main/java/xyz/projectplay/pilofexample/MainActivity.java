@@ -55,12 +55,14 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
             @Override
             public boolean onMarkerClick(Marker marker) {
                 behavior.setState(SheetBehavior.STATE_COLLAPSED);
+                behavior.setHideable(false);
                 return true;
             }
         });
         mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
             @Override
             public void onMapClick(LatLng latLng) {
+                behavior.setHideable(true);
                 behavior.setState(SheetBehavior.STATE_HIDDEN);
             }
         });

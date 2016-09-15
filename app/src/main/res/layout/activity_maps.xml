@@ -18,14 +18,6 @@
         android:background="@android:color/white"
         android:layout_gravity="bottom"
         app:behavior_hideable="true"
-        app:layout_behavior="xyz.projectplay.pilof.SheetBehavior">
-
-        <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="match_parent">
-
-        </RelativeLayout>
-
-    </android.support.v4.widget.NestedScrollView>
+        app:layout_behavior="xyz.projectplay.pilof.SheetBehavior" />
 
 </android.support.design.widget.CoordinatorLayout>
