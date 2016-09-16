@@ -122,6 +122,8 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
 
     private boolean mHideable;
 
+    private boolean mShouldAnchor;
+
     private boolean mSkipCollapsed;
 
     private boolean mSkipAnchored;
@@ -289,6 +291,10 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
         if (!child.isShown()) {
             return false;
         }
+
+        // set anchor flag on first pass up
+        mShouldAnchor = mState == STATE_COLLAPSED;
+
         int action = MotionEventCompat.getActionMasked(event);
         // Record the velocity
         if (action == MotionEvent.ACTION_DOWN) {
@@ -380,7 +386,11 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
         int currentTop = child.getTop();
         int newTop = currentTop - dy;
         if (dy > 0) { // Upward
-            if (newTop < mMinOffset) {
+            if (newTop < mAnchorOffset && mShouldAnchor) {
+                consumed[1] = currentTop - mAnchorOffset;
+                ViewCompat.offsetTopAndBottom(child, -consumed[1]);
+                setStateInternal(STATE_ANCHORED);
+            } else if (newTop < mMinOffset) {
                 consumed[1] = currentTop - mMinOffset;
                 ViewCompat.offsetTopAndBottom(child, -consumed[1]);
                 setStateInternal(STATE_EXPANDED);
@@ -420,7 +430,7 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
         int targetState;
         if (mLastNestedScrollDy > 0) {
             int currentTop = child.getTop();
-            if (currentTop > mAnchorOffset) {
+            if (currentTop > mAnchorOffset || mShouldAnchor) {
                 top = mAnchorOffset;
                 targetState = STATE_ANCHORED;
             } else {
@@ -774,6 +784,10 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
 
     private void dispatchOnSlide(int top) {
         View sheet = mViewRef.get();
+        // prevent the sheet from moving past the anchor point on the first pass upwards
+        if (mShouldAnchor && top < mAnchorOffset) {
+            sheet.setTop(mAnchorOffset);
+        }
         if (sheet != null && mCallback != null) {
             if (top > mMaxOffset) {
                 mCallback.onSlide(sheet, (float) (mMaxOffset - top) / mPeekHeight);
