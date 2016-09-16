@@ -6,6 +6,8 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
+import android.graphics.drawable.Drawable;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.annotation.IntDef;
@@ -126,7 +128,7 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
 
     private int mCurrentColor;
 
-    private int mColor;
+    private int mCollapsedColor;
 
     private int mAnchorColor;
 
@@ -190,8 +192,8 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
         setAnchorHeight(a.getDimensionPixelSize(BottomSheetBehavior_Layout_behavior_anchorOffset,
                         res.getDimensionPixelSize(R.dimen.anchorOffset)));
 
-        setColor(a.getColor(BottomSheetBehavior_Layout_behavior_color, Color.WHITE));
-        setPeekColor(a.getColor(BottomSheetBehavior_Layout_behavior_anchorColor,
+        setCollapsedColor(a.getColor(BottomSheetBehavior_Layout_behavior_collapsedColor, Color.WHITE));
+        setAnchorColor(a.getColor(BottomSheetBehavior_Layout_behavior_anchorColor,
                 ContextCompat.getColor(context, R.color.anchorColor)));
 
         bottomsheet = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.sheet, null);
@@ -204,6 +206,18 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
                     null);
             bottomsheet.addView(headerLayout, 0);
         }
+        bottomsheet.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                updateHeaderColor(mState == STATE_COLLAPSED ? mAnchorColor : mCollapsedColor);
+                setState(mState == STATE_COLLAPSED ? STATE_ANCHORED : STATE_COLLAPSED);
+            }
+        });
+        Drawable background = headerLayout.getBackground();
+        if (background instanceof ColorDrawable)
+            mCurrentColor = ((ColorDrawable) background).getColor();
+        else
+            mCurrentColor = mCollapsedColor;
 
         if (a.hasValue(BottomSheetBehavior_Layout_behavior_content_layout)) {
             bottomsheet.removeView(contentLayout);
@@ -435,7 +449,6 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
                 targetState = STATE_ANCHORED;
             }
         }
-        updateHeaderColor(targetState != STATE_COLLAPSED ? mAnchorColor : mColor);
         if (mViewDragHelper.smoothSlideViewTo(child, child.getLeft(), top)) {
             setStateInternal(STATE_SETTLING);
             ViewCompat.postOnAnimation(child, new SettleRunnable(child, targetState));
@@ -495,19 +508,19 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
         return mAnchorOffset;
     }
 
-    public void setColor(int mColor) {
-        this.mColor = mColor;
+    public void setCollapsedColor(int collapsedColor) {
+        this.mCollapsedColor = collapsedColor;
     }
 
-    public int getColor() {
-        return mColor;
+    public int getCollapsedColor() {
+        return mCollapsedColor;
     }
 
-    public void setPeekColor(int mPeekColor) {
-        this.mAnchorColor = mPeekColor;
+    public void setAnchorColor(int anchorColor) {
+        this.mAnchorColor = anchorColor;
     }
 
-    public int getPeekColor() {
+    public int getAnchorColor() {
         return mAnchorColor;
     }
 
@@ -566,8 +579,8 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
      * Sets the state of the bottom sheet. The bottom sheet will transition to that state with
      * animation.
      *
-     * @param state One of {@link #STATE_COLLAPSED}, {@link #STATE_EXPANDED}, or
-     *              {@link #STATE_HIDDEN}.
+     * @param state One of {@link #STATE_COLLAPSED}, {@link #STATE_EXPANDED},
+     *              {@link #STATE_ANCHORED} or {@link #STATE_HIDDEN}.
      */
     public final void setState(@State int state) {
         if (state == mState) {
@@ -607,7 +620,7 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
      * Gets the current state of the bottom sheet.
      *
      * @return One of {@link #STATE_EXPANDED}, {@link #STATE_COLLAPSED}, {@link #STATE_DRAGGING},
-     * and {@link #STATE_SETTLING}.
+     * {@link #STATE_ANCHORED} and {@link #STATE_SETTLING}.
      */
     @State
     public final int getState() {
@@ -619,6 +632,11 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
             return;
         }
         mState = state;
+        if (state == STATE_COLLAPSED) {
+            updateHeaderColor(mCollapsedColor);
+        } else if (mViewRef.get().getTop() < mMaxOffset) {
+            updateHeaderColor(mAnchorColor);
+        }
         View sheet = mViewRef.get();
         if (sheet != null && mCallback != null) {
             mCallback.onStateChanged(sheet, state);
@@ -827,8 +845,12 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
                 });
     }
 
+    private ValueAnimator colorAnimation;
+
     private void updateHeaderColor(int color) {
-        ValueAnimator colorAnimation = ValueAnimator.ofObject(
+        if (colorAnimation != null && colorAnimation.isRunning() && mState != STATE_COLLAPSED)
+            return;
+        colorAnimation = ValueAnimator.ofObject(
                 new ArgbEvaluator(), mCurrentColor, color).setDuration(200);
         mCurrentColor = color;
         colorAnimation.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {

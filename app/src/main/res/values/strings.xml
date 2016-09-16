@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Pilof Example</string>
+    <string name="app_name">Pilof</string>
     <string name="title_activity_maps">Map</string>
     <string name="hello_world">hello world</string>
 </resources>
