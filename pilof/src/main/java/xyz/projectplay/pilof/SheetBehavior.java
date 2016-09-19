@@ -35,7 +35,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.ref.WeakReference;
 
-import static xyz.projectplay.pilof.R.styleable.*;
+import static xyz.projectplay.pilof.R.styleable;
 
 /**
  * Created by Nathan Reline on 8/25/16.
@@ -126,8 +126,6 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
 
     private boolean mSkipCollapsed;
 
-    private boolean mSkipAnchored;
-
     private int mCurrentColor;
 
     private int mCollapsedColor;
@@ -167,6 +165,11 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
 
     View contentLayout;
 
+    private int parallaxId;
+    View parallax;
+
+    private Context mContext;
+
     /**
      * Default constructor for instantiating SheetBehaviors.
      */
@@ -182,29 +185,30 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
      */
     public SheetBehavior(Context context, AttributeSet attrs) {
         super(context, attrs);
+        mContext = context;
         Resources res = context.getResources();
         TypedArray a = context.obtainStyledAttributes(attrs,
-                BottomSheetBehavior_Layout);
+                styleable.BottomSheetBehavior_Layout);
         setPeekHeight(a.getDimensionPixelSize(
-                BottomSheetBehavior_Layout_behavior_peekHeight,
+                styleable.BottomSheetBehavior_Layout_behavior_peekHeight,
                 res.getDimensionPixelSize(R.dimen.peekHeight)));
-        setHideable(a.getBoolean(BottomSheetBehavior_Layout_behavior_hideable, false));
-        setSkipCollapsed(a.getBoolean(BottomSheetBehavior_Layout_behavior_skipCollapsed,
+        setHideable(a.getBoolean(styleable.BottomSheetBehavior_Layout_behavior_hideable, false));
+        setSkipCollapsed(a.getBoolean(styleable.BottomSheetBehavior_Layout_behavior_skipCollapsed,
                 false));
-        setAnchorHeight(a.getDimensionPixelSize(BottomSheetBehavior_Layout_behavior_anchorOffset,
+        setAnchorHeight(a.getDimensionPixelSize(styleable.BottomSheetBehavior_Layout_behavior_anchorOffset,
                         res.getDimensionPixelSize(R.dimen.anchorOffset)));
 
-        setCollapsedColor(a.getColor(BottomSheetBehavior_Layout_behavior_collapsedColor, Color.WHITE));
-        setAnchorColor(a.getColor(BottomSheetBehavior_Layout_behavior_anchorColor,
+        setCollapsedColor(a.getColor(styleable.BottomSheetBehavior_Layout_behavior_collapsedColor, Color.WHITE));
+        setAnchorColor(a.getColor(styleable.BottomSheetBehavior_Layout_behavior_anchorColor,
                 ContextCompat.getColor(context, R.color.anchorColor)));
 
         bottomsheet = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.sheet, null);
         headerLayout = bottomsheet.findViewById(R.id.header);
         contentLayout = bottomsheet.findViewById(R.id.content);
 
-        if (a.hasValue(BottomSheetBehavior_Layout_behavior_header_layout)) {
+        if (a.hasValue(styleable.BottomSheetBehavior_Layout_behavior_header_layout)) {
             bottomsheet.removeView(headerLayout);
-            headerLayout = LayoutInflater.from(context).inflate(a.getResourceId(BottomSheetBehavior_Layout_behavior_header_layout, 0),
+            headerLayout = LayoutInflater.from(context).inflate(a.getResourceId(styleable.BottomSheetBehavior_Layout_behavior_header_layout, 0),
                     null);
             bottomsheet.addView(headerLayout, 0);
         }
@@ -221,12 +225,14 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
         else
             mCurrentColor = mCollapsedColor;
 
-        if (a.hasValue(BottomSheetBehavior_Layout_behavior_content_layout)) {
+        if (a.hasValue(styleable.BottomSheetBehavior_Layout_behavior_content_layout)) {
             bottomsheet.removeView(contentLayout);
-            contentLayout = LayoutInflater.from(context).inflate(a.getResourceId(BottomSheetBehavior_Layout_behavior_content_layout, 0),
+            contentLayout = LayoutInflater.from(context).inflate(a.getResourceId(styleable.BottomSheetBehavior_Layout_behavior_content_layout, 0),
                     null);
             bottomsheet.addView(contentLayout, 1);
         }
+
+        parallaxId = a.getResourceId(styleable.BottomSheetBehavior_Layout_behavior_parallax_layout, -1);
 
         a.recycle();
 
@@ -279,9 +285,14 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
         }
         mViewRef = new WeakReference<>(child);
         mNestedScrollingChildRef = new WeakReference<>(findScrollingChild(child));
+        // add missing views to the layout
         ViewGroup nestedScrolling = (ViewGroup) mNestedScrollingChildRef.get();
         if (nestedScrolling.getChildCount() == 0) {
             nestedScrolling.addView(bottomsheet);
+        }
+        if (parallaxId != -1 && parent.indexOfChild(parallax) == -1) {
+            parallax = LayoutInflater.from(mContext).inflate(parallaxId, parent, false);
+            parent.addView(parallax, parent.indexOfChild(child));
         }
         return true;
     }
@@ -642,6 +653,14 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
             return;
         }
         mState = state;
+        // determine visibility of parallax
+        if (parallax != null) {
+            if (mState == STATE_COLLAPSED || mState == STATE_HIDDEN) {
+                parallax.setVisibility(View.GONE);
+            } else {
+                parallax.setVisibility(View.VISIBLE);
+            }
+        }
         if (state == STATE_COLLAPSED) {
             updateHeaderColor(mCollapsedColor);
         } else if (mViewRef.get().getTop() < mMaxOffset) {
@@ -788,13 +807,28 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
         if (mShouldAnchor && top < mAnchorOffset) {
             sheet.setTop(mAnchorOffset);
         }
-        if (sheet != null && mCallback != null) {
-            if (top > mMaxOffset) {
-                mCallback.onSlide(sheet, (float) (mMaxOffset - top) / mPeekHeight);
-            } else {
-                mCallback.onSlide(sheet,
-                        (float) (mMaxOffset - top) / ((mMaxOffset - mMinOffset)));
+
+        float slideOffset;
+        if (top > mMaxOffset) {
+            slideOffset = (float) (mMaxOffset - top) / mPeekHeight;
+        } else {
+            slideOffset = (float) (mMaxOffset - top) / ((mMaxOffset - mMinOffset));
+        }
+
+        // move the parallax with the sheet and update colors
+        if (parallax != null) {
+            if (slideOffset <= 0) {
+                updateHeaderColor(mCollapsedColor);
+                parallax.setVisibility(View.GONE);
+            } else if (slideOffset > 0 && (top >= parallax.getHeight() || parallax.getY() > 0)) {
+                // math for translating parallax relative to bottom sheet
+                float collapsedY = mParentHeight - mPeekHeight;
+                float scale = collapsedY / (collapsedY - parallax.getHeight());
+                parallax.setY((top - parallax.getHeight()) * scale);
             }
+        }
+        if (sheet != null && mCallback != null) {
+            mCallback.onSlide(sheet, slideOffset);
         }
     }
 
@@ -862,7 +896,8 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
     private ValueAnimator colorAnimation;
 
     private void updateHeaderColor(int color) {
-        if (colorAnimation != null && colorAnimation.isRunning() && mState != STATE_COLLAPSED)
+        if (colorAnimation != null && colorAnimation.isRunning() &&
+                mState != STATE_COLLAPSED || mCurrentColor == color)
             return;
         colorAnimation = ValueAnimator.ofObject(
                 new ArgbEvaluator(), mCurrentColor, color).setDuration(200);

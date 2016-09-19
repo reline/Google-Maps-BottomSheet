@@ -18,6 +18,7 @@
         android:background="@android:color/white"
         android:layout_gravity="bottom"
         app:behavior_hideable="true"
+        app:behavior_parallax_layout="@layout/parallax"
         app:layout_behavior="xyz.projectplay.pilof.SheetBehavior" />
 
 </android.support.design.widget.CoordinatorLayout>
