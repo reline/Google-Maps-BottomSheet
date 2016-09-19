@@ -161,6 +161,7 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
 
     LinearLayout bottomsheet;
 
+    boolean stateFlag = false;
     View headerLayout;
 
     View contentLayout;
@@ -215,6 +216,7 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
         bottomsheet.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                if (mState == STATE_ANCHORED) stateFlag = true;
                 updateHeaderColor(mState == STATE_COLLAPSED ? mAnchorColor : mCollapsedColor);
                 setState(mState == STATE_COLLAPSED ? STATE_ANCHORED : STATE_COLLAPSED);
             }
@@ -663,9 +665,10 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
         }
         if (state == STATE_COLLAPSED) {
             updateHeaderColor(mCollapsedColor);
-        } else if (mViewRef.get().getTop() < mMaxOffset) {
+        } else if (mViewRef.get().getTop() < mMaxOffset  && !stateFlag) {
             updateHeaderColor(mAnchorColor);
         }
+        stateFlag = false;
         View sheet = mViewRef.get();
         if (sheet != null && mCallback != null) {
             mCallback.onStateChanged(sheet, state);
@@ -817,14 +820,19 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
 
         // move the parallax with the sheet and update colors
         if (parallax != null) {
+            int height = parallax.getHeight();
+            float y  = parallax.getY();
             if (slideOffset <= 0) {
                 updateHeaderColor(mCollapsedColor);
                 parallax.setVisibility(View.GONE);
-            } else if (slideOffset > 0 && (top >= parallax.getHeight() || parallax.getY() > 0)) {
+            } else if (mAnchorOffset >= top && y <= mAnchorOffset - height && (y > 0 || top >= height)) {
+                parallax.setY(top - height);
+            } else if (slideOffset > 0 && (top >= mAnchorOffset || y > mAnchorOffset - height)) {
                 // math for translating parallax relative to bottom sheet
-                float collapsedY = mParentHeight - mPeekHeight;
-                float scale = collapsedY / (collapsedY - parallax.getHeight());
-                parallax.setY((top - parallax.getHeight()) * scale);
+                float init = mAnchorOffset - height;
+                float travelDistance = mMaxOffset - init;
+                float percentCovered = (top - mAnchorOffset) / (float) (mMaxOffset - mAnchorOffset);
+                parallax.setY(init + travelDistance * percentCovered);
             }
         }
         if (sheet != null && mCallback != null) {
@@ -896,8 +904,11 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
     private ValueAnimator colorAnimation;
 
     private void updateHeaderColor(int color) {
-        if (colorAnimation != null && colorAnimation.isRunning() &&
-                mState != STATE_COLLAPSED || mCurrentColor == color)
+        if (colorAnimation != null && (colorAnimation.isRunning() || colorAnimation.isStarted()) &&
+                mCurrentColor != color) {
+            colorAnimation.cancel();
+        }
+        if (colorAnimation != null && colorAnimation.isRunning() || mCurrentColor == color)
             return;
         colorAnimation = ValueAnimator.ofObject(
                 new ArgbEvaluator(), mCurrentColor, color).setDuration(200);
