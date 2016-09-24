@@ -44,7 +44,7 @@ import static xyz.projectplay.pilof.R.styleable;
  */
 public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V> {
 
-    private static final String TAG = "PilofSheet";
+    private final String TAG = this.getClass().getSimpleName();
 
     /**
      * Callback for monitoring events about bottom sheets.
@@ -166,7 +166,6 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
 
     View contentLayout;
 
-    private int parallaxId;
     View parallax;
 
     private Context mContext;
@@ -234,8 +233,6 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
             bottomsheet.addView(contentLayout, 1);
         }
 
-        parallaxId = a.getResourceId(styleable.BottomSheetBehavior_Layout_behavior_parallax_layout, -1);
-
         a.recycle();
 
         ViewConfiguration configuration = ViewConfiguration.get(context);
@@ -291,10 +288,6 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
         ViewGroup nestedScrolling = (ViewGroup) mNestedScrollingChildRef.get();
         if (nestedScrolling.getChildCount() == 0) {
             nestedScrolling.addView(bottomsheet);
-        }
-        if (parallaxId != -1 && parent.indexOfChild(parallax) == -1) {
-            parallax = LayoutInflater.from(mContext).inflate(parallaxId, parent, false);
-            parent.addView(parallax, parent.indexOfChild(child));
         }
         return true;
     }
@@ -588,6 +581,12 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
     public boolean getSkipCollapsed() {
         return mSkipCollapsed;
     }
+
+    public void setParallax(View view) {
+        this.parallax = view;
+    }
+
+    public View getParallax() { return parallax; }
 
     /**
      * Sets a callback to be notified of bottom sheet events.
