@@ -18,6 +18,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
 
     private static final String TAG = "MainActivity";
     private GoogleMap mMap;
+    private View parallax;
     private View bottomsheet;
     private SheetBehavior behavior;
 
@@ -30,8 +31,10 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
+        parallax = findViewById(R.id.parallax);
         bottomsheet = findViewById(R.id.bottomsheet);
         behavior = SheetBehavior.from(bottomsheet);
+        behavior.setParallax(parallax);
     }
 
 

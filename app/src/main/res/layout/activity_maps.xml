@@ -11,6 +11,13 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <View
+        android:id="@+id/parallax"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:background="@color/colorPrimaryDark"
+        android:visibility="gone"/>
+
     <android.support.v4.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
@@ -18,7 +25,6 @@
         android:background="@android:color/white"
         android:layout_gravity="bottom"
         app:behavior_hideable="true"
-        app:behavior_parallax_layout="@layout/parallax"
         app:layout_behavior="xyz.projectplay.pilof.SheetBehavior" />
 
 </android.support.design.widget.CoordinatorLayout>
