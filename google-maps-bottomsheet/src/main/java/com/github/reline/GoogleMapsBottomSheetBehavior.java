@@ -25,6 +25,7 @@ import android.support.v4.view.VelocityTrackerCompat;
 import android.support.v4.view.ViewCompat;
 import android.support.v4.widget.ViewDragHelper;
 import android.util.AttributeSet;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
@@ -201,9 +202,13 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
         Resources res = context.getResources();
         TypedArray a = context.obtainStyledAttributes(attrs,
                 R.styleable.GoogleMapsBottomSheetBehavior_Layout);
-        setPeekHeight(a.getDimensionPixelSize(
-                R.styleable.GoogleMapsBottomSheetBehavior_Layout_behavior_peekHeight,
-                res.getDimensionPixelSize(R.dimen.peekHeight)));
+        TypedValue value = a.peekValue(R.styleable.GoogleMapsBottomSheetBehavior_Layout_behavior_peekHeight);
+        if (value != null && value.data == PEEK_HEIGHT_AUTO) {
+            setPeekHeight(value.data);
+        } else {
+            setPeekHeight(a.getDimensionPixelSize(
+                    R.styleable.GoogleMapsBottomSheetBehavior_Layout_behavior_peekHeight, PEEK_HEIGHT_AUTO));
+        }
         setHideable(a.getBoolean(R.styleable.GoogleMapsBottomSheetBehavior_Layout_behavior_hideable, false));
         setSkipCollapsed(a.getBoolean(R.styleable.GoogleMapsBottomSheetBehavior_Layout_behavior_skipCollapsed,
                 false));
@@ -283,8 +288,17 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
         parent.onLayoutChild(child, layoutDirection);
         // Offset the bottom sheet
         mParentHeight = parent.getHeight();
+        int peekHeight;
+        if (mPeekHeightAuto) {
+            if (mPeekHeightMin == 0) {
+                mPeekHeightMin = parent.getResources().getDimensionPixelSize(R.dimen.peekHeightMin);
+            }
+            peekHeight = mPeekHeightMin;
+        } else {
+            peekHeight = mPeekHeight;
+        }
         mMinOffset = Math.max(0, mParentHeight - child.getHeight());
-        mMaxOffset = Math.max(mParentHeight - mPeekHeight, mMinOffset);
+        mMaxOffset = Math.max(mParentHeight - peekHeight, mMinOffset);
         if (mState == STATE_EXPANDED) {
             ViewCompat.offsetTopAndBottom(child, mMinOffset);
         } else if (mHideable && mState == STATE_HIDDEN) {
@@ -510,8 +524,24 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
      * @attr ref R.styleable#GoogleMapsBottomSheetBehavior_Layout_behavior_peekHeight
      */
     public final void setPeekHeight(int peekHeight) {
-        mPeekHeight = Math.max(0, peekHeight);
-        mMaxOffset = mParentHeight - peekHeight;
+        boolean layout = false;
+        if (peekHeight == PEEK_HEIGHT_AUTO) {
+            if (!mPeekHeightAuto) {
+                mPeekHeightAuto = true;
+                layout = true;
+            }
+        } else if (mPeekHeightAuto || mPeekHeight != peekHeight) {
+            mPeekHeightAuto = false;
+            mPeekHeight = Math.max(0, peekHeight);
+            mMaxOffset = mParentHeight - peekHeight;
+            layout = true;
+        }
+        if (layout && mState == STATE_COLLAPSED && mViewRef != null) {
+            V view = mViewRef.get();
+            if (view != null) {
+                view.requestLayout();
+            }
+        }
     }
 
     /**
@@ -528,6 +558,7 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
     /**
      * Sets the height of the bottom sheet when it is anchored.
      *
+     * todo, should be: The height of the anchored bottom sheet in pixels
      * @param anchorOffset The offset of the anchored bottom sheet from the top of its parent in pixels.
      * @attr ref R.styleable#GoogleMapsBottomSheetBehavior_Layout_behavior_anchorOffset
      */
