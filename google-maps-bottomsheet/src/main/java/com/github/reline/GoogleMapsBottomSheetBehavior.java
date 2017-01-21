@@ -3,7 +3,6 @@ package com.github.reline;
 import android.animation.ArgbEvaluator;
 import android.animation.ValueAnimator;
 import android.content.Context;
-import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
@@ -15,7 +14,6 @@ import android.support.annotation.NonNull;
 import android.support.annotation.RestrictTo;
 import android.support.annotation.VisibleForTesting;
 import android.support.design.widget.CoordinatorLayout;
-import android.support.v4.content.ContextCompat;
 import android.support.v4.os.ParcelableCompat;
 import android.support.v4.os.ParcelableCompatCreatorCallbacks;
 import android.support.v4.view.AbsSavedState;
@@ -112,7 +110,7 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
     public @interface State {}
 
     /**
-     * Peek at the 16:9 ratio keyline of its parent.
+     * Peek at 64dp.
      *
      * <p>This can be used as a parameter for {@link #setPeekHeight(int)}.
      * {@link #getPeekHeight()} will return this when the value is set.</p>
@@ -130,6 +128,19 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
     private boolean mPeekHeightAuto;
 
     private int mPeekHeightMin;
+
+    /** Anchor at the 16:9 ratio keyline of its parent.
+     *
+     * <p>This can be used as a parameter for {@link #setAnchorHeight(int)}.
+     * {@link #getAnchorHeight()} ()} will return this when the value is set.</p>
+     */
+    public static final int ANCHOR_HEIGHT_AUTO = -1;
+
+    private int mAnchorHeight;
+
+    private boolean mAnchorHeightAuto;
+
+    private int mAnchorHeightMin;
 
     private int mAnchorOffset;
 
@@ -199,12 +210,11 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
      */
     public GoogleMapsBottomSheetBehavior(Context context, AttributeSet attrs) {
         super(context, attrs);
-        Resources res = context.getResources();
         TypedArray a = context.obtainStyledAttributes(attrs,
                 R.styleable.GoogleMapsBottomSheetBehavior_Layout);
-        TypedValue value = a.peekValue(R.styleable.GoogleMapsBottomSheetBehavior_Layout_behavior_peekHeight);
-        if (value != null && value.data == PEEK_HEIGHT_AUTO) {
-            setPeekHeight(value.data);
+        TypedValue peekValue = a.peekValue(R.styleable.GoogleMapsBottomSheetBehavior_Layout_behavior_peekHeight);
+        if (peekValue != null && peekValue.data == PEEK_HEIGHT_AUTO) {
+            setPeekHeight(peekValue.data);
         } else {
             setPeekHeight(a.getDimensionPixelSize(
                     R.styleable.GoogleMapsBottomSheetBehavior_Layout_behavior_peekHeight, PEEK_HEIGHT_AUTO));
@@ -212,12 +222,20 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
         setHideable(a.getBoolean(R.styleable.GoogleMapsBottomSheetBehavior_Layout_behavior_hideable, false));
         setSkipCollapsed(a.getBoolean(R.styleable.GoogleMapsBottomSheetBehavior_Layout_behavior_skipCollapsed,
                 false));
-        setAnchorHeight(a.getDimensionPixelSize(R.styleable.GoogleMapsBottomSheetBehavior_Layout_behavior_anchorOffset,
-                        res.getDimensionPixelSize(R.dimen.anchorOffset)));
+
+        TypedValue anchorValue = a.peekValue(R.styleable.GoogleMapsBottomSheetBehavior_Layout_behavior_anchorHeight);
+        if (anchorValue != null && anchorValue.data == ANCHOR_HEIGHT_AUTO) {
+            setAnchorHeight(anchorValue.data);
+        } else {
+            setAnchorHeight(a.getDimensionPixelSize(
+                    R.styleable.GoogleMapsBottomSheetBehavior_Layout_behavior_anchorHeight, ANCHOR_HEIGHT_AUTO));
+        }
 
         setCollapsedColor(a.getColor(R.styleable.GoogleMapsBottomSheetBehavior_Layout_behavior_collapsedColor, Color.WHITE));
+        TypedValue anchorColorValue = new TypedValue();
+        context.getTheme().resolveAttribute(R.attr.colorAccent, anchorColorValue, true);
         setAnchorColor(a.getColor(R.styleable.GoogleMapsBottomSheetBehavior_Layout_behavior_anchorColor,
-                ContextCompat.getColor(context, R.color.anchorColor)));
+                anchorColorValue.data));
 
         bottomsheet = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.sheet, null);
         headerLayout = bottomsheet.findViewById(R.id.header);
@@ -243,10 +261,11 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
             }
         });
         Drawable background = headerLayout.getBackground();
-        if (background instanceof ColorDrawable)
+        if (background instanceof ColorDrawable) {
             mCurrentColor = ((ColorDrawable) background).getColor();
-        else
+        } else {
             mCurrentColor = mCollapsedColor;
+        }
 
         if (a.hasValue(R.styleable.GoogleMapsBottomSheetBehavior_Layout_behavior_content_layout)) {
             bottomsheet.removeView(contentLayout);
@@ -297,8 +316,18 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
         } else {
             peekHeight = mPeekHeight;
         }
+        int anchorHeight;
+        if (mAnchorHeightAuto) {
+            if (mAnchorHeightMin == 0) {
+                mAnchorHeightMin = mParentHeight - parent.getWidth() * 9 / 16;
+            }
+            anchorHeight = mAnchorHeightMin;
+        } else {
+            anchorHeight = mAnchorHeight;
+        }
         mMinOffset = Math.max(0, mParentHeight - child.getHeight());
         mMaxOffset = Math.max(mParentHeight - peekHeight, mMinOffset);
+        mAnchorOffset = Math.min(mParentHeight - anchorHeight, mMaxOffset);
         if (mState == STATE_EXPANDED) {
             ViewCompat.offsetTopAndBottom(child, mMinOffset);
         } else if (mHideable && mState == STATE_HIDDEN) {
@@ -520,7 +549,7 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
      *
      * @param peekHeight The height of the collapsed bottom sheet in pixels, or
      *                   {@link #PEEK_HEIGHT_AUTO} to configure the sheet to peek automatically
-     *                   at 16:9 ratio keyline.
+     *                   at 64dp.
      * @attr ref R.styleable#GoogleMapsBottomSheetBehavior_Layout_behavior_peekHeight
      */
     public final void setPeekHeight(int peekHeight) {
@@ -548,7 +577,7 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
      * Gets the height of the bottom sheet when it is collapsed.
      *
      * @return The height of the collapsed bottom sheet in pixels, or {@link #PEEK_HEIGHT_AUTO}
-     *         if the sheet is configured to peek automatically at 16:9 ratio keyline
+     *         if the sheet is configured to peek automatically at 64dp
      * @attr ref R.styleable#GoogleMapsBottomSheetBehavior_Layout_behavior_peekHeight
      */
     public final int getPeekHeight() {
@@ -556,24 +585,64 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
     }
 
     /**
+     * Sets the offset of the bottom sheet when it is anchored.
+     * Useful for when you know the height of your parallax but not the height of the parent.
+     *
+     * @param anchorOffset The offset of the anchored bottom sheet from the top of its parent in pixels.
+     */
+    public final void setAnchorOffset(int anchorOffset) {
+        setAnchorHeight(mParentHeight - anchorOffset);
+    }
+
+    /**
+     * Gets the offset of the bottom sheet when it is anchored.
+     * Useful for setting the height of your parallax.
+     *
+     * @return The offset of the anchored bottom sheet from the top of its parent in pixels.
+     */
+    public final int getAnchorOffset() {
+        return mAnchorOffset;
+    }
+
+    /**
      * Sets the height of the bottom sheet when it is anchored.
      *
-     * todo, should be: The height of the anchored bottom sheet in pixels
-     * @param anchorOffset The offset of the anchored bottom sheet from the top of its parent in pixels.
-     * @attr ref R.styleable#GoogleMapsBottomSheetBehavior_Layout_behavior_anchorOffset
+     * @param anchorHeight The height of the anchored bottom sheet in pixels, or
+     *                     {@link #ANCHOR_HEIGHT_AUTO} to configure the sheet to anchor automatically
+     *                     at 16:9 ratio keyline. If the anchor height is smaller than
+     *                     {@link #mPeekHeight}, the anchor height will be default to the peek height.
+     * @attr ref R.styleable#GoogleMapsBottomSheetBehavior_Layout_behavior_anchorHeight
      */
-    public final void setAnchorHeight(int anchorOffset) {
-        mAnchorOffset = Math.max(0, anchorOffset);
+    public final void setAnchorHeight(int anchorHeight) {
+        boolean layout = false;
+        if (anchorHeight == ANCHOR_HEIGHT_AUTO) {
+            if (!mAnchorHeightAuto) {
+                mAnchorHeightAuto = true;
+                layout = true;
+            }
+        } else if (mAnchorHeightAuto || mAnchorHeight != anchorHeight) {
+            mAnchorHeightAuto = false;
+            mAnchorHeight = Math.max(mPeekHeight, anchorHeight);
+            mAnchorOffset = mParentHeight - anchorHeight;
+            layout = true;
+        }
+        if (layout && mState == STATE_ANCHORED && mViewRef != null) {
+            V view = mViewRef.get();
+            if (view != null) {
+                view.requestLayout();
+            }
+        }
     }
 
     /**
      * Gets the height of the bottom sheet when it is anchored.
      *
-     * @return The offset of the anchored bottom sheet from the top of its parent.
+     * @return The height of the anchored bottom sheet in pixels, or {@link #ANCHOR_HEIGHT_AUTO}
+     *         if the sheet is configured to anchor automatically at 16:9 ratio keyline
      * @attr ref R.styleable#GoogleMapsBottomSheetBehavior_Layout_behavior_anchorOffset
      */
-    public final int getAnchorOffset() {
-        return mAnchorOffset;
+    public final int getAnchorHeight() {
+        return mAnchorHeightAuto ? ANCHOR_HEIGHT_AUTO : mAnchorHeight;
     }
 
     public void setCollapsedColor(int collapsedColor) {

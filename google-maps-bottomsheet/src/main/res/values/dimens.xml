@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <dimen name="peekHeightMin">64dp</dimen>
-    <dimen name="anchorOffset">250dp</dimen>
     <dimen name="headerHeight">110dp</dimen>
     <dimen name="listTitleHeight">56dp</dimen>
     <dimen name="screenEdgeMargin">16dp</dimen>

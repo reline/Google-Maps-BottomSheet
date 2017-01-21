@@ -7,7 +7,9 @@ Initializing and modifying a GoogleMapsBottomSheetBehavior is the same as the Bo
 ```java
 View bottomsheet = findViewById(R.id.bottomsheet);
 GoogleMapsBottomSheetBehavior behavior = GoogleMapsBottomSheetBehavior.from(bottomsheet);
-behavior.setPeekHeight(200); // sets peek height in pixels
+behavior.setPeekHeight(200); // in pixels
+// or use the default peek height, which is different from the support library
+behavior.setPeekHeight(PEEK_HEIGHT_AUTO);
 behavior.setState(GoogleMapsBottomSheetBehavior.STATE_COLLAPSED);
 behavior.setHideable(false);
 ```
@@ -28,11 +30,20 @@ behavior.setHideable(false);
 ### Framework features
 
 ##### Anchoring
+Using the offset from the top of the parent view
 ```java
-behavior.setAnchor(200); // sets anchor offset from the top of the screen in pixels
+behavior.setAnchorOffset(200); // in pixels
 ```
+or set the actual height of the bottomsheet when it is anchored
+```xml
+app:behavior_anchorHeight="200dp"
+<!-- or use the default 16:9 ratio keyline -->
+app:behavior_anchorHeight="auto"
 ```
-app:behavior_anchorOffset="200dp"
+```java
+behavior.setAnchorHeight(1100); // in pixels
+// or use the default 16:9 ratio keyline
+behavior.setAnchorHeight(ANCHOR_HEIGHT_AUTO);
 ```
 
 ##### Parallax
@@ -63,6 +74,7 @@ Be advised, when using a custom heading/content view a child should not be provi
     android:layout_gravity="bottom"
     app:behavior_hideable="true"
     app:behavior_peekHeight="100dp"
+    app:behavior_anchorHeight="auto"
     app:behavior_header_layout="@layout/custom_header"
     app:behavior_content_layout="@layout/custom_content"
     app:behavior_anchorColor="@color/colorPrimary"

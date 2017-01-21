@@ -4,7 +4,9 @@
         <attr name="behavior_peekHeight"/>
         <attr name="behavior_hideable" format="boolean" />
         <attr name="behavior_skipCollapsed" format="boolean" />
-        <attr name="behavior_anchorOffset" format="dimension"/>
+        <attr name="behavior_anchorHeight" format="dimension">
+            <enum name="auto" value="-1"/>
+        </attr>
         <attr name="behavior_anchorColor" format="color" />
         <attr name="behavior_collapsedColor" format="color" />
         <attr name="behavior_header_layout" format="reference" />
