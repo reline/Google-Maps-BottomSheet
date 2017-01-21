@@ -44,8 +44,6 @@ import static xyz.projectplay.pilof.R.styleable;
  */
 public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V> {
 
-    private final String TAG = this.getClass().getSimpleName();
-
     /**
      * Callback for monitoring events about bottom sheets.
      */
@@ -159,14 +157,14 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
 
     private boolean mTouchingScrollingChild;
 
-    LinearLayout bottomsheet;
+    private LinearLayout bottomsheet;
 
-    boolean stateFlag = false;
-    View headerLayout;
+    private boolean stateFlag = false;
+    private View headerLayout;
 
-    View contentLayout;
+    private View contentLayout;
 
-    View parallax;
+    private View parallax;
 
     private Context mContext;
 
@@ -174,7 +172,6 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
      * Default constructor for instantiating SheetBehaviors.
      */
     public SheetBehavior() {
-
     }
 
     /**
@@ -903,8 +900,7 @@ public class SheetBehavior<V extends View> extends CoordinatorLayout.Behavior<V>
     private ValueAnimator colorAnimation;
 
     private void updateHeaderColor(int color) {
-        if (colorAnimation != null && (colorAnimation.isRunning() || colorAnimation.isStarted()) &&
-                mCurrentColor != color) {
+        if (colorAnimation != null && colorAnimation.isRunning() && mCurrentColor != color) {
             colorAnimation.cancel();
         }
         if (colorAnimation != null && colorAnimation.isRunning() || mCurrentColor == color)
