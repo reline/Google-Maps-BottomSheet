@@ -1,14 +1,14 @@
-# Pilof
+# Google Maps BottomSheet Behavior
 A BottomSheetBehavior framework mirroring Google Maps
 
 ## Usage
 
-Initializing and modifying a SheetBehavior is the same as the BottomSheetBehavior from the support library
+Initializing and modifying a GoogleMapsBottomSheetBehavior is the same as the BottomSheetBehavior from the support library
 ```java
 View bottomsheet = findViewById(R.id.bottomsheet);
-SheetBehavior behavior = SheetBehavior.from(bottomsheet);
+GoogleMapsBottomSheetBehavior behavior = GoogleMapsBottomSheetBehavior.from(bottomsheet);
 behavior.setPeekHeight(200); // sets peek height in pixels
-behavior.setState(SheetBehavior.STATE_COLLAPSED);
+behavior.setState(GoogleMapsBottomSheetBehavior.STATE_COLLAPSED);
 behavior.setHideable(false);
 ```
 ```xml
@@ -20,7 +20,7 @@ behavior.setHideable(false);
     android:layout_gravity="bottom"
     app:behavior_hideable="true"
     app:behavior_peekHeight="100dp"
-    app:layout_behavior="xyz.projectplay.pilof.SheetBehavior">
+    app:layout_behavior="com.github.reline.GoogleMapsBottomSheetBehavior">
     ...
 </android.support.v4.widget.NestedScrollView>
 ```
@@ -37,7 +37,7 @@ app:behavior_anchorOffset="200dp"
 
 ##### Parallax
 ```java
-View parallax = findViewById(R.id.parallax);
+View parallax = ...;
 behavior.setParallax(parallax);
 ```
 ```xml
@@ -67,5 +67,5 @@ Be advised, when using a custom heading/content view a child should not be provi
     app:behavior_content_layout="@layout/custom_content"
     app:behavior_anchorColor="@color/colorPrimary"
     app:behavior_collapsedColor="@android:color/white"
-    app:layout_behavior="xyz.projectplay.pilof.SheetBehavior" />
+    app:layout_behavior="com.github.reline.GoogleMapsBottomSheetBehavior" />
 ```

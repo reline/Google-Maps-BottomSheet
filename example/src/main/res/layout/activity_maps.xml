@@ -1,0 +1,31 @@
+<android.support.design.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/coordinator_layout">
+
+    <fragment
+        android:id="@+id/map"
+        android:name="com.google.android.gms.maps.SupportMapFragment"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <View
+        android:id="@+id/parallax"
+        android:layout_width="match_parent"
+        android:layout_height="200dp"
+        android:background="@color/colorPrimary"
+        android:visibility="gone"/>
+
+    <android.support.v4.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/bottomsheet"
+        android:background="@android:color/white"
+        android:layout_gravity="bottom"
+        app:behavior_hideable="true"
+        android:elevation="16dp"
+        app:layout_behavior="com.github.reline.GoogleMapsBottomSheetBehavior" />
+
+</android.support.design.widget.CoordinatorLayout>

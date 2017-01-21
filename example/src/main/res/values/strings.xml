@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">Google Maps BottomSheet Example</string>
+    <string name="title_activity_maps">Map</string>
+    <string name="hello_world">hello world</string>
+</resources>
