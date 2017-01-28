@@ -24,6 +24,8 @@
         android:background="@android:color/white"
         android:layout_gravity="bottom"
         app:behavior_hideable="true"
+        app:behavior_header_layout="@layout/custom_header"
+        app:behavior_content_layout="@layout/custom_content"
         android:elevation="16dp"
         app:layout_behavior="com.github.reline.GoogleMapsBottomSheetBehavior" />
 

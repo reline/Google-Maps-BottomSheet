@@ -200,8 +200,6 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
 
     private View parallax;
 
-    private Context context;
-
     /**
      * Default constructor for instantiating GoogleMapsBottomSheetBehaviors.
      */
@@ -216,7 +214,6 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
      */
     public GoogleMapsBottomSheetBehavior(Context context, AttributeSet attrs) {
         super(context, attrs);
-        this.context = context;
         TypedArray a = context.obtainStyledAttributes(attrs,
                 R.styleable.GoogleMapsBottomSheetBehavior_Layout);
         TypedValue peekValue = a.peekValue(R.styleable.GoogleMapsBottomSheetBehavior_Layout_behavior_peekHeight);
@@ -244,16 +241,8 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
         setAnchorColor(a.getColor(R.styleable.GoogleMapsBottomSheetBehavior_Layout_behavior_anchorColor,
                 anchorColorValue.data));
 
-        bottomsheet = (LinearLayout) LayoutInflater.from(context).inflate(R.layout.sheet, null);
-        headerLayout = bottomsheet.findViewById(R.id.header);
-        contentLayout = bottomsheet.findViewById(R.id.content);
-
-        if (a.hasValue(R.styleable.GoogleMapsBottomSheetBehavior_Layout_behavior_header_layout)) {
-            bottomsheet.removeView(headerLayout);
-            headerLayout = LayoutInflater.from(context).inflate(a.getResourceId(R.styleable.GoogleMapsBottomSheetBehavior_Layout_behavior_header_layout, 0),
-                    null);
-            bottomsheet.addView(headerLayout, 0);
-        }
+        bottomsheet = new LinearLayout(context);
+        bottomsheet.setOrientation(LinearLayout.VERTICAL);
         bottomsheet.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -267,18 +256,21 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
                 }
             }
         });
-        Drawable background = headerLayout.getBackground();
-        if (background instanceof ColorDrawable) {
-            mCurrentColor = ((ColorDrawable) background).getColor();
-        } else {
-            mCurrentColor = mCollapsedColor;
+
+        if (a.hasValue(R.styleable.GoogleMapsBottomSheetBehavior_Layout_behavior_header_layout)) {
+            headerLayout = LayoutInflater.from(context).inflate(a.getResourceId(R.styleable.GoogleMapsBottomSheetBehavior_Layout_behavior_header_layout, 0), null);
+            bottomsheet.addView(headerLayout, 0);
+            Drawable background = headerLayout.getBackground();
+            if (background instanceof ColorDrawable) {
+                mCurrentColor = ((ColorDrawable) background).getColor();
+            } else {
+                mCurrentColor = mCollapsedColor;
+            }
         }
 
         if (a.hasValue(R.styleable.GoogleMapsBottomSheetBehavior_Layout_behavior_content_layout)) {
-            bottomsheet.removeView(contentLayout);
-            contentLayout = LayoutInflater.from(context).inflate(a.getResourceId(R.styleable.GoogleMapsBottomSheetBehavior_Layout_behavior_content_layout, 0),
-                    null);
-            bottomsheet.addView(contentLayout, 1);
+            contentLayout = LayoutInflater.from(context).inflate(a.getResourceId(R.styleable.GoogleMapsBottomSheetBehavior_Layout_behavior_content_layout, 0), null);
+            bottomsheet.addView(contentLayout);
         }
 
         a.recycle();
@@ -713,8 +705,8 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
     public void setParallax(View view) {
         parallax = view;
         parallax.setVisibility(View.INVISIBLE);
-        if (context != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            parallax.setElevation(UiUtils.convertDpToPixel(context, MODAL_BOTTOM_SHEET_ELEVATION));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            parallax.setElevation(view.getResources().getDimensionPixelSize(R.dimen.parallaxElevation));
         }
     }
 
