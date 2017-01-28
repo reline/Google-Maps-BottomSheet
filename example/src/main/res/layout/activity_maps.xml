@@ -11,12 +11,11 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
-    <View
+    <fragment
         android:id="@+id/parallax"
+        class="com.google.android.gms.maps.SupportStreetViewPanoramaFragment"
         android:layout_width="match_parent"
-        android:layout_height="200dp"
-        android:background="@color/colorPrimary"
-        android:visibility="gone"/>
+        android:layout_height="wrap_content"/>
 
     <android.support.v4.widget.NestedScrollView
         android:layout_width="match_parent"

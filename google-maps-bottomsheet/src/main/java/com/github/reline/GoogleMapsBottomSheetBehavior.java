@@ -7,10 +7,12 @@ import android.content.res.TypedArray;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.os.Build;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.annotation.IntDef;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.annotation.RestrictTo;
 import android.support.annotation.VisibleForTesting;
 import android.support.design.widget.CoordinatorLayout;
@@ -72,6 +74,8 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
          */
         public abstract void onSlide(@NonNull View bottomSheet, float slideOffset);
     }
+
+    private static final float MODAL_BOTTOM_SHEET_ELEVATION = 16f;
 
     /**
      * The bottom sheet is dragging.
@@ -196,6 +200,8 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
 
     private View parallax;
 
+    private Context context;
+
     /**
      * Default constructor for instantiating GoogleMapsBottomSheetBehaviors.
      */
@@ -210,6 +216,7 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
      */
     public GoogleMapsBottomSheetBehavior(Context context, AttributeSet attrs) {
         super(context, attrs);
+        this.context = context;
         TypedArray a = context.obtainStyledAttributes(attrs,
                 R.styleable.GoogleMapsBottomSheetBehavior_Layout);
         TypedValue peekValue = a.peekValue(R.styleable.GoogleMapsBottomSheetBehavior_Layout_behavior_peekHeight);
@@ -704,10 +711,25 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
     }
 
     public void setParallax(View view) {
-        this.parallax = view;
+        parallax = view;
+        parallax.setVisibility(View.INVISIBLE);
+        if (context != null && Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            parallax.setElevation(UiUtils.convertDpToPixel(context, MODAL_BOTTOM_SHEET_ELEVATION));
+        }
     }
 
+    @Nullable
     public View getParallax() { return parallax; }
+
+    @Nullable
+    public View getHeaderLayout() {
+        return headerLayout;
+    }
+
+    @Nullable
+    public View getContentLayout() {
+        return contentLayout;
+    }
 
     /**
      * Sets a callback to be notified of bottom sheet events.
@@ -1039,21 +1061,22 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
     private ValueAnimator colorAnimation;
 
     private void updateHeaderColor(int color) {
-        if (colorAnimation != null && colorAnimation.isRunning() && mCurrentColor != color) {
-            colorAnimation.cancel();
-        }
-        if (colorAnimation != null && colorAnimation.isRunning() || mCurrentColor == color)
-            return;
-        colorAnimation = ValueAnimator.ofObject(
-                new ArgbEvaluator(), mCurrentColor, color).setDuration(200);
-        mCurrentColor = color;
-        colorAnimation.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
-            @Override
-            public void onAnimationUpdate(ValueAnimator valueAnimator) {
-                headerLayout.setBackgroundColor((int) valueAnimator.getAnimatedValue());
+        if (mCurrentColor != color) {
+            if (colorAnimation != null && colorAnimation.isRunning()) {
+                colorAnimation.cancel();
             }
-        });
-        colorAnimation.start();
+            if (headerLayout != null) {
+                colorAnimation = ValueAnimator.ofObject(new ArgbEvaluator(), mCurrentColor, color).setDuration(200);
+                mCurrentColor = color;
+                colorAnimation.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+                    @Override
+                    public void onAnimationUpdate(ValueAnimator valueAnimator) {
+                        headerLayout.setBackgroundColor((int) valueAnimator.getAnimatedValue());
+                    }
+                });
+                colorAnimation.start();
+            }
+        }
     }
 
     /**

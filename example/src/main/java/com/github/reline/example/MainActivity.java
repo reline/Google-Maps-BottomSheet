@@ -1,25 +1,27 @@
 package com.github.reline.example;
 
 import android.os.Bundle;
+import android.support.design.widget.CoordinatorLayout;
 import android.support.v4.app.FragmentActivity;
 import android.view.View;
+import android.view.ViewTreeObserver;
 
 import com.github.reline.GoogleMapsBottomSheetBehavior;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.OnStreetViewPanoramaReadyCallback;
+import com.google.android.gms.maps.StreetViewPanorama;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.SupportStreetViewPanoramaFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
 
-public class MainActivity extends FragmentActivity implements OnMapReadyCallback {
+public class MainActivity extends FragmentActivity implements OnMapReadyCallback, OnStreetViewPanoramaReadyCallback {
 
-    private static final String TAG = "MainActivity";
-    private GoogleMap mMap;
-    private View parallax;
-    private View bottomsheet;
     private GoogleMapsBottomSheetBehavior behavior;
+    private static final LatLng SYDNEY = new LatLng(-33.87365, 151.20689);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,10 +32,25 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                 .findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);
 
-        parallax = findViewById(R.id.parallax);
-        bottomsheet = findViewById(R.id.bottomsheet);
+        SupportStreetViewPanoramaFragment streetViewPanoramaFragment = (SupportStreetViewPanoramaFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.parallax);
+        streetViewPanoramaFragment.getStreetViewPanoramaAsync(this);
+
+        final View bottomsheet = findViewById(R.id.bottomsheet);
         behavior = GoogleMapsBottomSheetBehavior.from(bottomsheet);
+        final View parallax = findViewById(R.id.parallax);
         behavior.setParallax(parallax);
+
+        // wait for the bottomsheet to be laid out
+        bottomsheet.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                // set the height of the parallax to fill the gap between the anchor and the top of the screen
+                CoordinatorLayout.LayoutParams layoutParams = new CoordinatorLayout.LayoutParams(parallax.getMeasuredWidth(), behavior.getAnchorOffset());
+                parallax.setLayoutParams(layoutParams);
+                bottomsheet.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+            }
+        });
     }
 
 
@@ -48,12 +65,9 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
      */
     @Override
     public void onMapReady(GoogleMap googleMap) {
-        mMap = googleMap;
-
         // Add a marker in Sydney and move the camera
-        LatLng sydney = new LatLng(-34, 151);
-        mMap.addMarker(new MarkerOptions().position(sydney).title("Marker in Sydney"));
-        mMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+        googleMap.addMarker(new MarkerOptions().position(SYDNEY).title("Marker in Sydney"));
+        googleMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
             @Override
             public boolean onMarkerClick(Marker marker) {
                 behavior.setState(GoogleMapsBottomSheetBehavior.STATE_COLLAPSED);
@@ -61,13 +75,19 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
                 return true;
             }
         });
-        mMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
+        googleMap.setOnMapClickListener(new GoogleMap.OnMapClickListener() {
             @Override
             public void onMapClick(LatLng latLng) {
                 behavior.setHideable(true);
                 behavior.setState(GoogleMapsBottomSheetBehavior.STATE_HIDDEN);
             }
         });
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney));
+        googleMap.moveCamera(CameraUpdateFactory.newLatLng(SYDNEY));
+    }
+
+    @Override
+    public void onStreetViewPanoramaReady(StreetViewPanorama streetViewPanorama) {
+        streetViewPanorama.setPosition(SYDNEY);
+        streetViewPanorama.setUserNavigationEnabled(false);
     }
 }
