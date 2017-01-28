@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <dimen name="peekHeightMin">64dp</dimen>
-    <dimen name="parallaxElevation">16dp</dimen>
 </resources>

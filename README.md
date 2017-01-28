@@ -56,8 +56,13 @@ behavior.setParallax(parallax);
     android:id="@+id/parallax"
     android:layout_width="match_parent"
     android:layout_height="200dp"
-    android:background="@color/colorPrimaryDark"
-    android:visibility="gone"/>
+    android:background="@color/colorPrimaryDark"/>
+```
+
+TIP: Use `behavior.getAnchorOffset()` to make the parallax fill the entire gap between the anchor and the top of the screen.
+```
+LayoutParams layoutParams = new LayoutParams(parallax.getMeasuredWidth(), behavior.getAnchorOffset());
+parallax.setLayoutParams(layoutParams);
 ```
 
 ##### Custom Header/Content and Color Animations
