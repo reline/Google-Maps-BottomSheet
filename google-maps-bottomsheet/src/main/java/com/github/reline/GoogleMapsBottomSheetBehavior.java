@@ -153,8 +153,6 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
 
     private boolean mHideable;
 
-    private boolean mShouldAnchor;
-
     private boolean mSkipCollapsed;
 
     private int mCurrentColor;
@@ -305,27 +303,21 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
         parent.onLayoutChild(child, layoutDirection);
         // Offset the bottom sheet
         mParentHeight = parent.getHeight();
-        int peekHeight;
         if (mPeekHeightAuto) {
             if (mPeekHeightMin == 0) {
                 mPeekHeightMin = parent.getResources().getDimensionPixelSize(R.dimen.peekHeightMin);
             }
-            peekHeight = mPeekHeightMin;
-        } else {
-            peekHeight = mPeekHeight;
+            mPeekHeight = mPeekHeightMin;
         }
-        int anchorHeight;
         if (mAnchorHeightAuto) {
             if (mAnchorHeightMin == 0) {
                 mAnchorHeightMin = mParentHeight - parent.getWidth() * 9 / 16;
             }
-            anchorHeight = mAnchorHeightMin;
-        } else {
-            anchorHeight = mAnchorHeight;
+            mAnchorHeight = mAnchorHeightMin;
         }
         mMinOffset = Math.max(0, mParentHeight - child.getHeight());
-        mMaxOffset = Math.max(mParentHeight - peekHeight, mMinOffset);
-        mAnchorOffset = Math.min(mParentHeight - anchorHeight, mMaxOffset);
+        mMaxOffset = Math.max(mParentHeight - mPeekHeight, mMinOffset);
+        mAnchorOffset = Math.min(mParentHeight - mAnchorHeight, mMaxOffset);
         if (mState == STATE_EXPANDED) {
             ViewCompat.offsetTopAndBottom(child, mMinOffset);
         } else if (mHideable && mState == STATE_HIDDEN) {
@@ -356,9 +348,6 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
             mIgnoreEvents = true;
             return false;
         }
-
-        // set anchor flag on first pass up
-        mShouldAnchor = mState == STATE_COLLAPSED;
 
         int action = MotionEventCompat.getActionMasked(event);
         // Record the velocity
@@ -451,11 +440,7 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
         int currentTop = child.getTop();
         int newTop = currentTop - dy;
         if (dy > 0) { // Upward
-            if (newTop < mAnchorOffset && mShouldAnchor) {
-                consumed[1] = currentTop - mAnchorOffset;
-                ViewCompat.offsetTopAndBottom(child, -consumed[1]);
-                setStateInternal(STATE_ANCHORED);
-            } else if (newTop < mMinOffset) {
+            if (newTop < mMinOffset) {
                 consumed[1] = currentTop - mMinOffset;
                 ViewCompat.offsetTopAndBottom(child, -consumed[1]);
                 setStateInternal(STATE_EXPANDED);
@@ -495,7 +480,7 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
         int targetState;
         if (mLastNestedScrollDy > 0) {
             int currentTop = child.getTop();
-            if (currentTop > mAnchorOffset || mShouldAnchor) {
+            if (currentTop > mAnchorOffset) {
                 top = mAnchorOffset;
                 targetState = STATE_ANCHORED;
             } else {
@@ -946,10 +931,6 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
 
     private void dispatchOnSlide(int top) {
         View bottomSheet = mViewRef.get();
-        // prevent the sheet from moving past the anchor point on the first pass upwards
-        if (mShouldAnchor && top < mAnchorOffset) {
-            bottomSheet.setTop(mAnchorOffset);
-        }
 
         float slideOffset;
         if (top > mMaxOffset) {
@@ -958,13 +939,13 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
             slideOffset = (float) (mMaxOffset - top) / ((mMaxOffset - mMinOffset));
         }
 
-        // move the parallax with the sheet and update colors
+        // move the parallax relative to the bottomsheet and update colors
         if (parallax != null) {
             int height = parallax.getHeight();
             float y  = parallax.getY();
             if (slideOffset <= 0) {
                 updateHeaderColor(mCollapsedColor);
-                parallax.setVisibility(View.GONE);
+                parallax.setVisibility(View.INVISIBLE);
             } else if (mAnchorOffset >= top && y <= mAnchorOffset - height && (y > 0 || top >= height)) {
                 parallax.setY(top - height);
             } else if (slideOffset > 0 && (top >= mAnchorOffset || y > mAnchorOffset - height)) {
