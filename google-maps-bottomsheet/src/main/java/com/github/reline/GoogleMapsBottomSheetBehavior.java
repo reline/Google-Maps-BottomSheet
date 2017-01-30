@@ -33,10 +33,13 @@ import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.List;
 
 import static android.support.annotation.RestrictTo.Scope.LIBRARY_GROUP;
 
@@ -161,6 +164,10 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
 
     private int mAnchorColor;
 
+    private int mCollapsedTextColor;
+
+    private int mAnchorTextColor;
+
     @State
     private int mState = STATE_HIDDEN;
 
@@ -238,6 +245,9 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
         setAnchorColor(a.getColor(R.styleable.GoogleMapsBottomSheetBehavior_Layout_behavior_anchorColor,
                 anchorColorValue.data));
 
+        setAnchorTextColor(a.getColor(R.styleable.GoogleMapsBottomSheetBehavior_Layout_behavior_anchorTextColor, Color.WHITE));
+        setCollapsedTextColor(a.getColor(R.styleable.GoogleMapsBottomSheetBehavior_Layout_behavior_collapsedTextColor, Color.BLACK));
+
         bottomsheet = new LinearLayout(context);
         bottomsheet.setOrientation(LinearLayout.VERTICAL);
         bottomsheet.setOnClickListener(new View.OnClickListener() {
@@ -245,10 +255,10 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
             public void onClick(View view) {
                 stateFlag = mState == STATE_ANCHORED;
                 if (mState == STATE_COLLAPSED) {
-                    updateHeaderColor(mAnchorColor);
+                    updateHeaderColor(mAnchorColor, mAnchorTextColor);
                     setState(STATE_ANCHORED);
                 } else {
-                    updateHeaderColor(mCollapsedColor);
+                    updateHeaderColor(mCollapsedColor, mCollapsedTextColor);
                     setState(STATE_COLLAPSED);
                 }
             }
@@ -644,6 +654,22 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
         return mAnchorColor;
     }
 
+    public void setCollapsedTextColor(int collapsedTextColor) {
+        this.mCollapsedTextColor = collapsedTextColor;
+    }
+
+    public int getCollapsedTextColor() {
+        return mCollapsedTextColor;
+    }
+
+    public int getAnchorTextColor() {
+        return mAnchorTextColor;
+    }
+
+    public void setAnchorTextColor(int anchorTextColor) {
+        this.mAnchorTextColor = anchorTextColor;
+    }
+
     /**
      * Sets whether this bottom sheet can hide when it is swiped down.
      *
@@ -774,9 +800,9 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
             }
         }
         if (state == STATE_COLLAPSED) {
-            updateHeaderColor(mCollapsedColor);
+            updateHeaderColor(mCollapsedColor, mCollapsedTextColor);
         } else if (mViewRef.get().getTop() < mMaxOffset  && !stateFlag) {
-            updateHeaderColor(mAnchorColor);
+            updateHeaderColor(mAnchorColor, mAnchorTextColor);
         }
         stateFlag = false;
         View bottomSheet = mViewRef.get();
@@ -944,7 +970,7 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
             int height = parallax.getHeight();
             float y  = parallax.getY();
             if (slideOffset <= 0) {
-                updateHeaderColor(mCollapsedColor);
+                updateHeaderColor(mCollapsedColor, mCollapsedTextColor);
                 parallax.setVisibility(View.INVISIBLE);
             } else if (mAnchorOffset >= top && y <= mAnchorOffset - height && (y > 0 || top >= height)) {
                 parallax.setY(top - height);
@@ -1029,14 +1055,15 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
 
     private ValueAnimator colorAnimation;
 
-    private void updateHeaderColor(int color) {
-        if (mCurrentColor != color) {
+    private void updateHeaderColor(int newBackgroundColor, int newTextColor) {
+        if (mCurrentColor != newBackgroundColor) {
             if (colorAnimation != null && colorAnimation.isRunning()) {
                 colorAnimation.cancel();
             }
             if (headerLayout != null) {
-                colorAnimation = ValueAnimator.ofObject(new ArgbEvaluator(), mCurrentColor, color).setDuration(200);
-                mCurrentColor = color;
+                final int DURATION = 200;
+                colorAnimation = ValueAnimator.ofObject(new ArgbEvaluator(), mCurrentColor, newBackgroundColor).setDuration(DURATION);
+                mCurrentColor = newBackgroundColor;
                 colorAnimation.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
                     @Override
                     public void onAnimationUpdate(ValueAnimator valueAnimator) {
@@ -1044,8 +1071,52 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
                     }
                 });
                 colorAnimation.start();
+
+                List<View> views = getAllChildrenRecursively(headerLayout);
+                for (int i = 0, size = views.size(); i < size; i++) {
+                    View view = views.get(i);
+                    if (view instanceof TextView) {
+                        animateTextColorChange(newTextColor, DURATION, (TextView) view);
+                    }
+                }
             }
         }
+    }
+
+    private void animateTextColorChange(int colorTo, int duration, final TextView view) {
+        ValueAnimator colorAnimation = ValueAnimator.ofObject(
+                new ArgbEvaluator(), view.getCurrentTextColor(), colorTo)
+                .setDuration(duration);
+        colorAnimation.addUpdateListener(new ValueAnimator.AnimatorUpdateListener() {
+            @Override
+            public void onAnimationUpdate(ValueAnimator animation) {
+                view.setTextColor((int) animation.getAnimatedValue());
+            }
+        });
+        colorAnimation.start();
+    }
+
+    private List<View> getAllChildrenRecursively(View v) {
+        if (!(v instanceof ViewGroup)) {
+            ArrayList<View> viewArrayList = new ArrayList<>();
+            viewArrayList.add(v);
+            return viewArrayList;
+        }
+
+        ArrayList<View> result = new ArrayList<>();
+
+        ViewGroup viewGroup = (ViewGroup) v;
+        for (int i = 0; i < viewGroup.getChildCount(); i++) {
+
+            View child = viewGroup.getChildAt(i);
+
+            ArrayList<View> viewArrayList = new ArrayList<>();
+            viewArrayList.add(v);
+            viewArrayList.addAll(getAllChildrenRecursively(child));
+
+            result.addAll(viewArrayList);
+        }
+        return result;
     }
 
     /**
