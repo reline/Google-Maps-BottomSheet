@@ -9,6 +9,8 @@
         </attr>
         <attr name="behavior_anchorColor" format="color" />
         <attr name="behavior_collapsedColor" format="color" />
+        <attr name="behavior_anchorTextColor" format="color" />
+        <attr name="behavior_collapsedTextColor" format="color" />
         <attr name="behavior_header_layout" format="reference" />
         <attr name="behavior_content_layout" format="reference" />
         <attr name="behavior_parallax_layout" format="reference" />

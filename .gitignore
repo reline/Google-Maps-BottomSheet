@@ -3,6 +3,7 @@
 *.iml
 annotations
 classes
+captures
 
 # Generated
 bin
