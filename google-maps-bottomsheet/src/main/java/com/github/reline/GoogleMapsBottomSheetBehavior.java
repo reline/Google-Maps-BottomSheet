@@ -198,7 +198,9 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
     private LinearLayout bottomsheet;
 
     private boolean stateFlag = false;
+
     private View headerLayout;
+    private List<TextView> headerTextViews;
 
     private View contentLayout;
 
@@ -266,6 +268,7 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
 
         if (a.hasValue(R.styleable.GoogleMapsBottomSheetBehavior_Layout_behavior_header_layout)) {
             headerLayout = LayoutInflater.from(context).inflate(a.getResourceId(R.styleable.GoogleMapsBottomSheetBehavior_Layout_behavior_header_layout, 0), null);
+            headerTextViews = getAllTextViewChildrenRecursively(headerLayout);
             bottomsheet.addView(headerLayout, 0);
             Drawable background = headerLayout.getBackground();
             if (background instanceof ColorDrawable) {
@@ -1072,12 +1075,8 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
                 });
                 colorAnimation.start();
 
-                List<View> views = getAllChildrenRecursively(headerLayout);
-                for (int i = 0, size = views.size(); i < size; i++) {
-                    View view = views.get(i);
-                    if (view instanceof TextView) {
-                        animateTextColorChange(newTextColor, DURATION, (TextView) view);
-                    }
+                for (int i = 0, size = headerTextViews.size(); i < size; i++) {
+                    animateTextColorChange(newTextColor, DURATION, headerTextViews.get(i));
                 }
             }
         }
@@ -1096,25 +1095,18 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
         colorAnimation.start();
     }
 
-    private List<View> getAllChildrenRecursively(View v) {
-        if (!(v instanceof ViewGroup)) {
-            ArrayList<View> viewArrayList = new ArrayList<>();
-            viewArrayList.add(v);
+    private List<TextView> getAllTextViewChildrenRecursively(View v) {
+        if (v instanceof TextView) {
+            ArrayList<TextView> viewArrayList = new ArrayList<>();
+            viewArrayList.add((TextView) v);
             return viewArrayList;
         }
 
-        ArrayList<View> result = new ArrayList<>();
-
+        ArrayList<TextView> result = new ArrayList<>();
         ViewGroup viewGroup = (ViewGroup) v;
         for (int i = 0; i < viewGroup.getChildCount(); i++) {
-
             View child = viewGroup.getChildAt(i);
-
-            ArrayList<View> viewArrayList = new ArrayList<>();
-            viewArrayList.add(v);
-            viewArrayList.addAll(getAllChildrenRecursively(child));
-
-            result.addAll(viewArrayList);
+            result.addAll(getAllTextViewChildrenRecursively(child));
         }
         return result;
     }
