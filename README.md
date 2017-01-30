@@ -1,6 +1,10 @@
 # Google Maps BottomSheet Behavior
 A BottomSheetBehavior framework mirroring Google Maps
 
+## Demo
+
+![Demo](https://raw.githubusercontent.com/Reline/GoogleMapsBottomSheet/master/extras/demo.gif)
+
 ## Usage
 
 Initializing and modifying a GoogleMapsBottomSheetBehavior is the same as the BottomSheetBehavior from the support library
