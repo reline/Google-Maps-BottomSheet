@@ -338,14 +338,27 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
         mAnchorOffset = Math.min(mParentHeight - mAnchorHeight, mMaxOffset);
         if (mState == STATE_EXPANDED) {
             ViewCompat.offsetTopAndBottom(child, mMinOffset);
+            updateHeaderColor(mAnchorColor, mAnchorTextColor);
+            anchorViews(mMinOffset);
         } else if (mHideable && mState == STATE_HIDDEN) {
             ViewCompat.offsetTopAndBottom(child, mParentHeight);
+            anchorViews(mParentHeight);
         } else if (mState == STATE_COLLAPSED) {
             ViewCompat.offsetTopAndBottom(child, mMaxOffset);
+            anchorViews(mMaxOffset);
         } else if (mState == STATE_DRAGGING || mState == STATE_SETTLING) {
             ViewCompat.offsetTopAndBottom(child, savedTop - child.getTop());
         } else if (mState == STATE_ANCHORED) {
             ViewCompat.offsetTopAndBottom(child, mAnchorOffset);
+            updateHeaderColor(mAnchorColor, mAnchorTextColor);
+            if (parallax != null) {
+                int reference = savedTop - parallax.getHeight();
+                parallax.setY(reference);
+                parallax.setVisibility(View.VISIBLE);
+                anchorViews(reference);
+            } else {
+                anchorViews(mAnchorOffset);
+            }
         }
         if (mViewDragHelper == null) {
             mViewDragHelper = ViewDragHelper.create(parent, mDragCallback);
@@ -357,7 +370,6 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
         if (nestedScrolling.getChildCount() == 0) {
             nestedScrolling.addView(bottomsheet);
         }
-        // TODO: 2/10/17 reset the anchored views
         return true;
     }
 
@@ -1029,27 +1041,31 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
         }
 
         if (bottomSheet != null) {
-            // move all views that are anchored to the bottomsheet
             int reference;
             if (parallax != null && slideOffset > 0) {
                 reference = (int) parallax.getY();
             } else {
                 reference = bottomSheet.getTop();
             }
-            for (int i = 0, size = anchoredViews.size(); i < size; i++) {
-                View view = anchoredViews.get(i);
-                CoordinatorLayout.LayoutParams lp = (CoordinatorLayout.LayoutParams) view.getLayoutParams();
-                view.setY(reference - lp.bottomMargin - lp.height);
-            }
-
-            // set the padding on the map
-            if (map != null) {
-                map.setPadding(0, 0, 0, mParentHeight - reference);
-            }
+            anchorViews(reference);
 
             if (mCallback != null) {
                 mCallback.onSlide(bottomSheet, slideOffset);
             }
+        }
+    }
+
+    private void anchorViews(int reference) {
+        // move all views that are anchored to the bottomsheet
+        for (int i = 0, size = anchoredViews.size(); i < size; i++) {
+            View view = anchoredViews.get(i);
+            CoordinatorLayout.LayoutParams lp = (CoordinatorLayout.LayoutParams) view.getLayoutParams();
+            view.setY(reference - lp.bottomMargin - lp.height);
+        }
+
+        // set the padding on the map
+        if (map != null) {
+            map.setPadding(0, 0, 0, mParentHeight - reference);
         }
     }
 
