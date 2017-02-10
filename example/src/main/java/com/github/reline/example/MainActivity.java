@@ -2,6 +2,7 @@ package com.github.reline.example;
 
 import android.os.Bundle;
 import android.support.design.widget.CoordinatorLayout;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.FragmentActivity;
 import android.view.View;
 import android.view.ViewTreeObserver;
@@ -27,6 +28,9 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_maps);
+
+        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
+
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.map);
@@ -40,6 +44,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
         behavior = GoogleMapsBottomSheetBehavior.from(bottomsheet);
         final View parallax = findViewById(R.id.parallax);
         behavior.setParallax(parallax);
+        behavior.anchorView(fab);
 
         // wait for the bottomsheet to be laid out
         bottomsheet.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
@@ -65,6 +70,7 @@ public class MainActivity extends FragmentActivity implements OnMapReadyCallback
      */
     @Override
     public void onMapReady(GoogleMap googleMap) {
+        behavior.anchorMap(googleMap);
         // Add a marker in Sydney and move the camera
         googleMap.addMarker(new MarkerOptions().position(SYDNEY).title("Marker in Sydney"));
         googleMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {

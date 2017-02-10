@@ -35,6 +35,8 @@ import android.view.ViewParent;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.google.android.gms.maps.GoogleMap;
+
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.ref.WeakReference;
@@ -206,6 +208,9 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
 
     private View parallax;
 
+    private final List<View> anchoredViews = new ArrayList<>();
+    private GoogleMap map;
+
     /**
      * Default constructor for instantiating GoogleMapsBottomSheetBehaviors.
      */
@@ -352,6 +357,7 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
         if (nestedScrolling.getChildCount() == 0) {
             nestedScrolling.addView(bottomsheet);
         }
+        // TODO: 2/10/17 reset the anchored views
         return true;
     }
 
@@ -734,6 +740,42 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
     }
 
     /**
+     * Anchor a view to the top of the bottomsheet/parallax.
+     * @throws IllegalStateException when the view given does not have
+     * {@link android.view.ViewGroup.LayoutParams} of type {@link CoordinatorLayout.LayoutParams}
+     * @param view View to be anchored.
+     */
+    public void anchorView(View view) {
+        if (!(view.getLayoutParams() instanceof CoordinatorLayout.LayoutParams)) {
+            throw new IllegalStateException("View must be a child of a CoordinatorLayout");
+        }
+        anchoredViews.add(view);
+    }
+
+    /**
+     * Unanchor a view from the bottomsheet, if it is anchored.
+     * @param view View to be unanchored.
+     */
+    public void unanchorView(View view) {
+        if (anchoredViews.contains(view)) {
+            anchoredViews.remove(view);
+        }
+    }
+
+    /**
+     * Anchor the map to the bottomsheet. This will adjust the padding of the map into view
+     * as the bottomsheet moves towards the top of the screen. This keeps the Google logo in view.
+     * @param map
+     */
+    public void anchorMap(GoogleMap map) {
+        this.map = map;
+    }
+
+    public void unanchorMap() {
+        this.map = null;
+    }
+
+    /**
      * Sets a callback to be notified of bottom sheet events.
      *
      * @param callback The callback to notify when bottom sheet events occur.
@@ -985,8 +1027,29 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
                 parallax.setY(init + travelDistance * percentCovered);
             }
         }
-        if (bottomSheet != null && mCallback != null) {
-            mCallback.onSlide(bottomSheet, slideOffset);
+
+        if (bottomSheet != null) {
+            // move all views that are anchored to the bottomsheet
+            int reference;
+            if (parallax != null && slideOffset > 0) {
+                reference = (int) parallax.getY();
+            } else {
+                reference = bottomSheet.getTop();
+            }
+            for (int i = 0, size = anchoredViews.size(); i < size; i++) {
+                View view = anchoredViews.get(i);
+                CoordinatorLayout.LayoutParams lp = (CoordinatorLayout.LayoutParams) view.getLayoutParams();
+                view.setY(reference - lp.bottomMargin - lp.height);
+            }
+
+            // set the padding on the map
+            if (map != null) {
+                map.setPadding(0, 0, 0, mParentHeight - reference);
+            }
+
+            if (mCallback != null) {
+                mCallback.onSlide(bottomSheet, slideOffset);
+            }
         }
     }
 
