@@ -79,8 +79,6 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
         public abstract void onSlide(@NonNull View bottomSheet, float slideOffset);
     }
 
-    private static final float MODAL_BOTTOM_SHEET_ELEVATION = 16f;
-
     /**
      * The bottom sheet is dragging.
      */
