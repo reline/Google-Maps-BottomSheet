@@ -1182,6 +1182,9 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
         }
 
         ArrayList<TextView> result = new ArrayList<>();
+        if (!(v instanceof ViewGroup)) {		
+            return result;		
+        }
         ViewGroup viewGroup = (ViewGroup) v;
         for (int i = 0; i < viewGroup.getChildCount(); i++) {
             View child = viewGroup.getChildAt(i);
