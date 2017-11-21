@@ -255,22 +255,22 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
 
         bottomsheet = new LinearLayout(context);
         bottomsheet.setOrientation(LinearLayout.VERTICAL);
-        bottomsheet.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                stateFlag = mState == STATE_ANCHORED;
-                if (mState == STATE_COLLAPSED) {
-                    updateHeaderColor(mAnchorColor, mAnchorTextColor);
-                    setState(STATE_ANCHORED);
-                } else {
-                    updateHeaderColor(mCollapsedColor, mCollapsedTextColor);
-                    setState(STATE_COLLAPSED);
-                }
-            }
-        });
 
         if (a.hasValue(R.styleable.GoogleMapsBottomSheetBehavior_Layout_behavior_header_layout)) {
             headerLayout = LayoutInflater.from(context).inflate(a.getResourceId(R.styleable.GoogleMapsBottomSheetBehavior_Layout_behavior_header_layout, 0), null);
+            headerLayout.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    stateFlag = mState == STATE_ANCHORED;
+                    if (mState == STATE_COLLAPSED) {
+                        updateHeaderColor(mAnchorColor, mAnchorTextColor);
+                        setState(STATE_ANCHORED);
+                    } else {
+                        updateHeaderColor(mCollapsedColor, mCollapsedTextColor);
+                        setState(STATE_COLLAPSED);
+                    }
+                }
+            });
             headerTextViews = getAllTextViewChildrenRecursively(headerLayout);
             bottomsheet.addView(headerLayout, 0);
             Drawable background = headerLayout.getBackground();
