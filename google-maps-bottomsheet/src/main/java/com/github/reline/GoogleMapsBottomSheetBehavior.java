@@ -266,6 +266,7 @@ public class GoogleMapsBottomSheetBehavior<V extends View> extends CoordinatorLa
                         updateHeaderColor(mAnchorColor, mAnchorTextColor);
                         setState(STATE_ANCHORED);
                     } else {
+                        mNestedScrollingChildRef.get().scrollTo(0, 0);
                         updateHeaderColor(mCollapsedColor, mCollapsedTextColor);
                         setState(STATE_COLLAPSED);
                     }
