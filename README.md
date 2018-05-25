@@ -90,3 +90,17 @@ Be advised, when using a custom heading/content view a child should not be provi
     app:behavior_collapsedColor="@android:color/white"
     app:layout_behavior="com.github.reline.GoogleMapsBottomSheetBehavior" />
 ```
+
+### Gradle
+
+```groovy
+allprojects {
+    repositories {
+        maven { url 'https://jitpack.io' }
+    }
+}
+
+dependencies {
+    implementation 'com.github.reline:google-maps-bottomsheet:1.0'
+}
+```
