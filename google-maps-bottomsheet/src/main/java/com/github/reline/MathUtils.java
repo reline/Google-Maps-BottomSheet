@@ -2,11 +2,11 @@ package com.github.reline;
 
 class MathUtils {
 
-    static int constrain(int amount, int low, int high) {
+    static int clamp(int amount, int low, int high) {
         return amount < low ? low : (amount > high ? high : amount);
     }
 
-    static float constrain(float amount, float low, float high) {
+    static float clamp(float amount, float low, float high) {
         return amount < low ? low : (amount > high ? high : amount);
     }
 
